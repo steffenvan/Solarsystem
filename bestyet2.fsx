@@ -89,22 +89,35 @@ type Planet (filename:string, color : Brush) = class
   //Den kan simulere i op til et år og i intervaller fra hver dag tilhver 30. dag.
   member this.Simulate(simtime:int) (interval:int) =
     let mutable planetList = []
-    if simtime <= 365 && interval <= 30 then
-      let mutable vel = this.Velocity
-      let mutable acc = this.Accelerate
-      let mutable pos = this.Position
-      let mutable time = 1.0
-      for i in 1 .. simtime do
+    let mutable vel = this.Velocity
+    let mutable acc = this.Accelerate
+    let mutable pos = this.Position
+    let mutable time = 1.0
+    if simtime <= 365 && interval < 2 then
+      for i in 1 .. simtime*10 do
         pos  <- (first pos + (first vel * time), second pos + (second vel * time), third pos + (third vel * time)) 
         vel  <- (first vel + (first acc * time), second vel + (second acc * time), third vel + (third acc * time))
         acc  <- (this.AccEq(pos) * first pos, this.AccEq(pos) * second pos, this.AccEq(pos) * third pos) 
-        planetList <- planetList@[(second pos, first pos)] 
-       // if i = 1 || i%(interval*100) = 0 && simtime - interval < i then
+        planetList <- planetList@[(first pos, second pos)]
+    elif simtime <= 365 && interval = 30 then
+      for i in 1 .. simtime*10 do
+        pos  <- (first pos + (first vel * time), second pos + (second vel * time), third pos + (third vel * time)) 
+        vel  <- (first vel + (first acc * time), second vel + (second acc * time), third vel + (third acc * time))
+        acc  <- (this.AccEq(pos) * first pos, this.AccEq(pos) * second pos, this.AccEq(pos) * third pos) 
+        planetList <- planetList@[(first pos, second pos)]
+        if i = 1 || i%(interval*10) = 0 && simtime - interval < i then
+          printfn "%A" pos
     else
       printfn "invalid simulation or interval time, maximum is 365 days and 30 day interval. Please try again:"
       this.Simulate (int (System.Console.ReadLine())) (int (System.Console.ReadLine()))
+  //Her tages der højde for, om den liste a koordinater er tom. 
+  //Er dette tilfældet, anvender vi List.map, for at gemmme koordinater,
+  //for at bibevare listen af koordinater. 
     if temp = [] then
       temp <- planetList |> List.map (fun x -> [x])
+  //Hvis temp ikke er tom, sammensættes listen af planeternes positioner 
+  //sammen med den overordnede liste (temp). Dernæst bliver alle lister
+  //sammensat i den samme overordnede liste.
     else
       temp <- List.zip planetList temp |> List.map (fun (posPlanet, posOtherPlanets) -> posPlanet :: posOtherPlanets)
     planetColors <- color :: planetColors
@@ -175,30 +188,27 @@ let createForm backgroundColor (width, height) title draw =
 
 // Properties of the window
 let title = "Solar System"  
-let backgroundColor = Color.White
+let backgroundColor = Color.Black
 let size = (800, 800)
-let pen = (Color.Black, 1.0)
+let pen = (Color.White, 1.0)
 
 
+//Definerer hvilken skrifttype og størrelse
 let font = new Font("Arial", 9.0F)
-// Function to draw 1 box
+//Her er det speicelt, hvor List.zip3 sammensætter 3 listers værdier. 
+//for at kunne give en planet et navn, farve, og positioner. 
 let drawPoints  (i : int byref) (e : PaintEventArgs) =
-//  let Pen = new SolidBrush (Color.Red)
-  //let sunPen = new SolidBrush
   if i < temp.Length then
     for (pen, name, planet) in List.zip3 planetColors names temp.[i] do
       let (x, y) = planet
       e.Graphics.FillEllipse (pen, int ((x*10.0)+400.0), int ((y*10.0)+400.0),10,10)
-      e.Graphics.DrawString(name, font, Brushes.Black, float32 ((x*10.0)+400.0), float32 ((y*10.0)+400.0))
-
-let drawSol (e : PaintEventArgs) = 
-  let size = 10
-  let pen = new Pen (Color.Black)
-  let brush = new SolidBrush (Color.Yellow)
-  e.Graphics.DrawEllipse (pen, 400, 400, size, size)
-  e.Graphics.FillEllipse (brush, 400, 400, size, size)
-  ()
-
+      e.Graphics.DrawString(name, font, Brushes.White, float32 ((x*10.0)+400.0), float32 ((y*10.0)+400.0))
+    let size = 20
+    let pen = new Pen (Color.Black)
+    let brush = new SolidBrush (Color.Yellow)
+    e.Graphics.DrawEllipse (pen, 400, 400, size, size)
+    e.Graphics.FillEllipse (brush, 400, 400, size, size)
+  
 
 // Function for updating the center point of the box
 let updatePoints (form : Form) showtime =
@@ -206,55 +216,44 @@ let updatePoints (form : Form) showtime =
     i <- i + 1
     form.Refresh()
     printfn "%A" temp.[i]
-  //point <- temp.[i] 
-  //drawPoints (&temp.[i])
-
-
-
 
 let main() =
   // Create window
   let win = createForm backgroundColor size title (drawPoints &i)
   
-  let Mercury = new Planet ("Mercury.txt", Brushes.Gray)
+  let Mercury = new Planet ("Mercury.txt", Brushes.Brown)
   let Venus = new Planet ("Venus.txt", Brushes.Orange)
-  let Earth = new Planet ("Earth.txt", Brushes.Blue)
+  let Earth = new Planet ("Earth.txt", Brushes.Green)
   let Mars = new Planet ("Mars.txt", Brushes.Red)
-//  let Jupiter = new Planet ("Jupiter.txt")
-//  let Saturn = new Planet ("Saturn.txt")
-//  let Uranus = new Planet ("Uranus.txt")
-//  let Neptune = new Planet ("Neptune.txt")
-//  let Pluto = new DwarfPlanet ("Pluto.txt")
+  let Jupiter = new Planet ("Jupiter.txt", Brushes.OliveDrab)
+  let Saturn = new Planet ("Saturn.txt", Brushes.Pink)
+  let Uranus = new Planet ("Uranus.txt", Brushes.Purple)
+  let Neptune = new Planet ("Neptune.txt", Brushes.Blue)
+  let Pluto = new Planet ("Pluto.txt", Brushes.Gray)
 
-  printfn "%A" Earth.Position2
-  printfn "%A" Earth.NasaData
-  Mercury.Simulate 365 30
-  Venus.Simulate 365 30
-  Earth.Simulate 365 30
-  Mars.Simulate 365 30
+  Mercury.Simulate 365 1
+  Venus.Simulate 365 1
+  Earth.Simulate 365 1
+  Mars.Simulate 365 1
+  Jupiter.Simulate 365 1
+  Saturn.Simulate 365 1
+  Uranus.Simulate 365 1
+  Neptune.Simulate 365 1
+  Pluto.Simulate 365 1
 
-
-  let win = new Form ()
-  win.Text <- title
-  win.BackColor <- backgroundColor
-  win.ClientSize <- Size (width, height)
-  win.Paint.Add drawSol
-  win
-  
   // Create timer
-
   let timer = new Timer()
   timer.Interval <- 100
   timer.Enabled <- true
   let dtheta = 0.01
   timer.Tick.Add (updatePoints win)
   
- // Application.Run win
-
+  // Application.Run win
+  Application.Run win
   
   printfn "* MercuryTest *"
+  Mercury.Simulate 365 30
   printfn ""
-  (*
   Mercury.NasaData
   printfn "* VenusTest *"
   Venus.Simulate 365 30
@@ -288,6 +287,5 @@ let main() =
   Pluto.Simulate 365 30
   printfn ""
   Pluto.NasaData
-*)
-main()
 
+main()
